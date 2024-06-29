@@ -44,11 +44,11 @@
             color: blue;
             margin: 10px 0;
         }
-        #introScreen {
+        #introScreen, #finishScreen {
             text-align: center;
             max-width: 600px;
         }
-        #introScreen h1 {
+        #introScreen h1, #finishScreen h1 {
             font-size: 48px;
             color: #4CAF50;
         }
@@ -74,17 +74,20 @@
         <button id="startGame">ゲームを開始</button>
     </div>
 
-    <div id="targetInfo"></div>
-    <div id="stage"></div>
-    <div id="timer"></div>
-    <div id="winMessage" style="display: none;">WIN-WIN</div>
-    <div id="finalTime"></div>
-    <div id="playerName"></div>
-    <div id="screenshotMessage" style="display: none;">良かったら記録をスクリーンショットしてください</div>
-    <canvas id="gameCanvas"></canvas>
-    <input type="text" id="nameInput" placeholder="名前を入力" style="display: none;">
-    <button id="submitName" style="display: none;">名前を送信</button>
-    <div>
+    <div id="gameScreen" style="display: none;">
+        <div id="targetInfo"></div>
+        <div id="stage"></div>
+        <div id="timer"></div>
+        <canvas id="gameCanvas"></canvas>
+    </div>
+
+    <div id="finishScreen" style="display: none;">
+        <h1 id="winMessage">WIN-WIN</h1>
+        <div id="finalTime"></div>
+        <div id="playerName"></div>
+        <input type="text" id="nameInput" placeholder="名前を入力">
+        <button id="submitName">名前を送信</button>
+        <div id="screenshotMessage" style="display: none;">良かったら記録をスクリーンショットしてください</div>
         <button id="tryAgain" style="display: none;">Try Again</button>
     </div>
 
@@ -101,6 +104,8 @@
         const tryAgainButton = document.getElementById('tryAgain');
         const startGameButton = document.getElementById('startGame');
         const introScreen = document.getElementById('introScreen');
+        const gameScreen = document.getElementById('gameScreen');
+        const finishScreen = document.getElementById('finishScreen');
         const finalTimeElement = document.getElementById('finalTime');
         const screenshotMessageElement = document.getElementById('screenshotMessage');
 
@@ -143,13 +148,6 @@
             stage = 1;
             startTime = new Date().getTime();
             elapsedTime = 0;
-            winMessageElement.style.display = 'none';
-            playerNameElement.textContent = '';
-            finalTimeElement.textContent = '';
-            screenshotMessageElement.style.display = 'none';
-            nameInput.style.display = 'none';
-            submitNameButton.style.display = 'none';
-            tryAgainButton.style.display = 'none';
 
             clearInterval(timerInterval);
             updateTimer();
@@ -240,7 +238,7 @@
                             } else {
                                 gameCompleted = true;
                                 clearInterval(timerInterval);
-                                showWinMessage();
+                                showFinishScreen();
                             }
                         }
                     }
@@ -249,11 +247,10 @@
             }
         });
 
-        function showWinMessage() {
-            winMessageElement.style.display = 'block';
+        function showFinishScreen() {
+            gameScreen.style.display = 'none';
+            finishScreen.style.display = 'block';
             finalTimeElement.textContent = `時間: ${elapsedTime.toFixed(1)}秒`;
-            nameInput.style.display = 'block';
-            submitNameButton.style.display = 'block';
         }
 
         submitNameButton.addEventListener('click', function() {
@@ -269,25 +266,21 @@
 
         function resetGame() {
             introScreen.style.display = 'block';
-            canvas.style.display = 'none';
-            timerElement.style.display = 'none';
-            stageElement.style.display = 'none';
-            targetInfoElement.style.display = 'none';
-            tryAgainButton.style.display = 'none';
-            winMessageElement.style.display = 'none';
+            gameScreen.style.display = 'none';
+            finishScreen.style.display = 'none';
             playerNameElement.textContent = '';
-            finalTimeElement.textContent = '';
+            nameInput.value = '';
+            nameInput.style.display = 'inline-block';
+            submitNameButton.style.display = 'inline-block';
             screenshotMessageElement.style.display = 'none';
+            tryAgainButton.style.display = 'none';
         }
 
         tryAgainButton.addEventListener('click', resetGame);
 
         startGameButton.addEventListener('click', function() {
             introScreen.style.display = 'none';
-            canvas.style.display = 'block';
-            timerElement.style.display = 'block';
-            stageElement.style.display = 'block';
-            targetInfoElement.style.display = 'block';
+            gameScreen.style.display = 'block';
             initializeGame();
         });
 
