@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BABA GAME</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        #gameCanvas {
+            border: 1px solid black;
+            max-width: 100%;
+            max-height: 70vh;
+            display: none;
+        }
+        #timer, #stage, #targetInfo {
+            font-size: 24px;
+            margin: 10px 0;
+            display: none;
+        }
+        #nameInput, #submitName, #tryAgain, #startGame {
+            margin: 10px 0;
+            font-size: 18px;
+            padding: 10px 20px;
+            cursor: pointer;
+        }
+        #winMessage {
+            font-size: 36px;
+            font-weight: bold;
+            color: #4CAF50;
+            margin: 10px 0;
+        }
+        #playerName {
+            font-size: 24px;
+            font-weight: bold;
+            color: blue;
+            margin: 10px 0;
+        }
+        #introScreen {
+            text-align: center;
+            max-width: 600px;
+        }
+        #introScreen h1 {
+            font-size: 48px;
+            color: #4CAF50;
+        }
+        #introScreen p {
+            font-size: 18px;
+            line-height: 1.6;
+        }
+    </style>
+</head>
+<body>
+    <div id="introScreen">
+        <h1>BABA GAME</h1>
+        <p>
+            このゲームは、表示される目標文字を順番に選んでいくゲームです。<br>
+            5つのステージがあり、各ステージで異なる文字を探す必要があります。<br>
+            できるだけ早くすべてのステージをクリアしましょう！<br>
+            準備ができたら下のボタンをクリックしてゲームを開始してください。
+        </p>
+        <button id="startGame">ゲームを開始</button>
+    </div>
+
+    <div id="targetInfo"></div>
+    <div id="stage"></div>
+    <div id="timer"></div>
+    <div id="winMessage" style="display: none;">WIN-WIN</div>
+    <div id="playerName"></div>
+    <canvas id="gameCanvas"></canvas>
+    <input type="text" id="nameInput" placeholder="名前を入力" style="display: none;">
+    <button id="submitName" style="display: none;">名前を送信</button>
+    <button id="tryAgain" style="display: none;">Try Again</button>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const timerElement = document.getElementById('timer');
+        const stageElement = document.getElementById('stage');
+        const targetInfoElement = document.getElementById('targetInfo');
+        const nameInput = document.getElementById('nameInput');
+        const submitNameButton = document.getElementById('submitName');
+        const winMessageElement = document.getElementById('winMessage');
+        const playerNameElement = document.getElementById('playerName');
+        const tryAgainButton = document.getElementById('tryAgain');
+        const startGameButton = document.getElementById('startGame');
+        const introScreen = document.getElementById('introScreen');
+
+        let width = 800;
+        let height = 600;
+        let characters = [];
+        let targetChars = [
+            ['豊'],
+            ['現', '調'],
+            ['一', '撃', '！'],
+            ['き', 'て', 'ぃ', 'ー'],
+            ['馬', '場', '動', '物', '園']
+        ];
+        let currentTarget = 0;
+        let startTime;
+        let elapsedTime = 0;
+        let stage = 1;
+        let gameCompleted = false;
+        let timerInterval;
+
+        function resizeCanvas() {
+            const maxWidth = window.innerWidth * 0.9;
+            const maxHeight = window.innerHeight * 0.7;
+            const aspectRatio = width / height;
+
+            if (maxWidth / aspectRatio <= maxHeight) {
+                canvas.width = maxWidth;
+                canvas.height = maxWidth / aspectRatio;
+            } else {
+                canvas.height = maxHeight;
+                canvas.width = maxHeight * aspectRatio;
+            }
+        }
+
+        function initializeGame() {
+            resizeCanvas();
+            characters = [];
+            currentTarget = 0;
+            gameCompleted = false;
+            stage = 1;
+            startTime = new Date().getTime();
+            elapsedTime = 0;
+            winMessageElement.style.display = 'none';
+            playerNameElement.textContent = '';
+            nameInput.style.display = 'none';
+            submitNameButton.style.display = 'none';
+            tryAgainButton.style.display = 'none';
+
+            clearInterval(timerInterval);
+            updateTimer();
+            timerInterval = setInterval(updateTimer, 100);
+
+            setStage();
+        }
+
+        function setStage() {
+            characters = [];
+            currentTarget = 0;
+            const rows = 10;
+            const cols = 10;
+            const cellWidth = canvas.width / cols;
+            const cellHeight = canvas.height / rows;
+
+            for (let i = 0; i < rows; i++) {
+                for (let j = 0; j < cols; j++) {
+                    characters.push({
+                        x: j * cellWidth + cellWidth / 2,
+                        y: i * cellHeight + cellHeight / 2,
+                        char: Math.random() < 0.5 ? 'A' : 'B',
+                        selected: false
+                    });
+                }
+            }
+
+            // ターゲット文字を配置
+            let availableIndices = [...Array(characters.length).keys()];
+            for (let char of targetChars[stage - 1]) {
+                let randomIndex = Math.floor(Math.random() * availableIndices.length);
+                let selectedIndex = availableIndices[randomIndex];
+                availableIndices.splice(randomIndex, 1);
+                characters[selectedIndex].char = char;
+            }
+
+            updateTargetInfo();
+            draw();
+        }
+
+        function updateTargetInfo() {
+            targetInfoElement.textContent = `＜${targetChars[stage - 1].join(' ')}＞を順番に選んでください！`;
+            stageElement.textContent = `ステージ: ${stage}`;
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.font = `${canvas.width / 40}px Arial`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+
+            for (let char of characters) {
+                ctx.fillStyle = char.selected ? 'red' : 'black';
+                ctx.fillText(char.char, char.x, char.y);
+            }
+
+            if (!gameCompleted) {
+                requestAnimationFrame(draw);
+            }
+        }
+
+        function updateTimer() {
+            if (!gameCompleted) {
+                elapsedTime = (new Date().getTime() - startTime) / 1000;
+                timerElement.textContent = `時間: ${elapsedTime.toFixed(1)}秒`;
+            }
+        }
+
+        canvas.addEventListener('click', function(event) {
+            if (gameCompleted) return;
+
+            const rect = canvas.getBoundingClientRect();
+            const x = (event.clientX - rect.left) * (canvas.width / rect.width);
+            const y = (event.clientY - rect.top) * (canvas.height / rect.height);
+
+            for (let char of characters) {
+                const cellWidth = canvas.width / 10;
+                const cellHeight = canvas.height / 10;
+                if (Math.abs(char.x - x) < cellWidth / 2 && Math.abs(char.y - y) < cellHeight / 2) {
+                    if (char.char === targetChars[stage - 1][currentTarget]) {
+                        char.selected = true;
+                        currentTarget++;
+
+                        if (currentTarget === targetChars[stage - 1].length) {
+                            if (stage < 5) {
+                                stage++;
+                                setStage();
+                            } else {
+                                gameCompleted = true;
+                                clearInterval(timerInterval);
+                                showWinMessage();
+                            }
+                        }
+                    }
+                    break;
+                }
+            }
+        });
+
+        function showWinMessage() {
+            winMessageElement.style.display = 'block';
+            nameInput.style.display = 'block';
+            submitNameButton.style.display = 'block';
+        }
+
+        submitNameButton.addEventListener('click', function() {
+            const name = nameInput.value.trim();
+            if (name) {
+                playerNameElement.textContent = `Player: ${name}`;
+                nameInput.style.display = 'none';
+                submitNameButton.style.display = 'none';
+                tryAgainButton.style.display = 'block';
+            }
+        });
+
+        tryAgainButton.addEventListener('click', function() {
+            introScreen.style.display = 'block';
+            canvas.style.display = 'none';
+            timerElement.style.display = 'none';
+            stageElement.style.display = 'none';
+            targetInfoElement.style.display = 'none';
+            tryAgainButton.style.display = 'none';
+            winMessageElement.style.display = 'none'; // この行を追加
+            playerNameElement.textContent = '';
+        });
+
+        startGameButton.addEventListener('click', function() {
+            introScreen.style.display = 'none';
+            canvas.style.display = 'block';
+            timerElement.style.display = 'block';
+            stageElement.style.display = 'block';
+            targetInfoElement.style.display = 'block';
+            initializeGame();
+        });
+
+        window.addEventListener('resize', resizeCanvas);
+    </script>
+</body>
+</html>
