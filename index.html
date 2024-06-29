@@ -27,7 +27,7 @@
             display: none;
         }
         #nameInput, #submitName, #tryAgain, #startGame {
-            margin: 10px 0;
+            margin: 10px 5px;
             font-size: 18px;
             padding: 10px 20px;
             cursor: pointer;
@@ -53,7 +53,7 @@
             color: #4CAF50;
         }
         #introScreen p {
-            font-size: 16px;
+            font-size: 18px;
             line-height: 1.6;
         }
     </style>
@@ -62,9 +62,10 @@
     <div id="introScreen">
         <h1>BABA GAME</h1>
         <p>
-            表示される文字を順番に選んでいくゲームです。<br>
-            5つのステージをできるだけ早くクリアしましょう！<br>
-            下のボタンをクリックしてゲームを開始してください。
+            このゲームは、表示される目標文字を順番に選んでいくゲームです。<br>
+            5つのステージがあり、各ステージで異なる文字を探す必要があります。<br>
+            できるだけ早くすべてのステージをクリアしましょう！<br>
+            準備ができたら下のボタンをクリックしてゲームを開始してください。
         </p>
         <button id="startGame">ゲームを開始</button>
     </div>
@@ -77,7 +78,9 @@
     <canvas id="gameCanvas"></canvas>
     <input type="text" id="nameInput" placeholder="名前を入力" style="display: none;">
     <button id="submitName" style="display: none;">名前を送信</button>
-    <button id="tryAgain" style="display: none;">Try Again</button>
+    <div>
+        <button id="tryAgain" style="display: none;">Try Again</button>
+    </div>
 
     <script>
         const canvas = document.getElementById('gameCanvas');
@@ -184,7 +187,7 @@
 
         function draw() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-            ctx.font = `${canvas.width / 40}px Arial`;
+            ctx.font = `${canvas.width / 16}px Arial`;
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
 
@@ -248,20 +251,22 @@
                 playerNameElement.textContent = `Player: ${name}`;
                 nameInput.style.display = 'none';
                 submitNameButton.style.display = 'none';
-                tryAgainButton.style.display = 'block';
+                tryAgainButton.style.display = 'inline-block';
             }
         });
 
-        tryAgainButton.addEventListener('click', function() {
+        function resetGame() {
             introScreen.style.display = 'block';
             canvas.style.display = 'none';
             timerElement.style.display = 'none';
             stageElement.style.display = 'none';
             targetInfoElement.style.display = 'none';
             tryAgainButton.style.display = 'none';
-            winMessageElement.style.display = 'none'; // この行を追加
+            winMessageElement.style.display = 'none';
             playerNameElement.textContent = '';
-        });
+        }
+
+        tryAgainButton.addEventListener('click', resetGame);
 
         startGameButton.addEventListener('click', function() {
             introScreen.style.display = 'none';
