@@ -26,8 +26,8 @@
             margin: 10px 0;
             display: none;
         }
-        #nameInput, #submitName, #tryAgain, #startGame {
-            margin: 10px 0;
+        #nameInput, #submitName, #tryAgain, #startGame, #showRanking {
+            margin: 10px 5px;
             font-size: 18px;
             padding: 10px 20px;
             cursor: pointer;
@@ -44,17 +44,26 @@
             color: blue;
             margin: 10px 0;
         }
-        #introScreen {
+        #introScreen, #rankingScreen {
             text-align: center;
             max-width: 600px;
         }
-        #introScreen h1 {
+        #introScreen h1, #rankingScreen h1 {
             font-size: 48px;
             color: #4CAF50;
         }
         #introScreen p {
             font-size: 18px;
             line-height: 1.6;
+        }
+        #rankingList {
+            list-style-type: none;
+            padding: 0;
+            text-align: left;
+        }
+        #rankingList li {
+            font-size: 18px;
+            margin: 10px 0;
         }
     </style>
 </head>
@@ -68,6 +77,13 @@
             準備ができたら下のボタンをクリックしてゲームを開始してください。
         </p>
         <button id="startGame">ゲームを開始</button>
+        <button id="showRanking">ランキングを見る</button>
+    </div>
+
+    <div id="rankingScreen" style="display: none;">
+        <h1>ランキング TOP10</h1>
+        <ul id="rankingList"></ul>
+        <button id="backToIntro">戻る</button>
     </div>
 
     <div id="targetInfo"></div>
@@ -78,7 +94,10 @@
     <canvas id="gameCanvas"></canvas>
     <input type="text" id="nameInput" placeholder="名前を入力" style="display: none;">
     <button id="submitName" style="display: none;">名前を送信</button>
-    <button id="tryAgain" style="display: none;">Try Again</button>
+    <div>
+        <button id="tryAgain" style="display: none;">Try Again</button>
+        <button id="showRankingAfterGame" style="display: none;">ランキングを見る</button>
+    </div>
 
     <script>
         const canvas = document.getElementById('gameCanvas');
@@ -92,7 +111,12 @@
         const playerNameElement = document.getElementById('playerName');
         const tryAgainButton = document.getElementById('tryAgain');
         const startGameButton = document.getElementById('startGame');
+        const showRankingButton = document.getElementById('showRanking');
+        const showRankingAfterGameButton = document.getElementById('showRankingAfterGame');
         const introScreen = document.getElementById('introScreen');
+        const rankingScreen = document.getElementById('rankingScreen');
+        const rankingList = document.getElementById('rankingList');
+        const backToIntroButton = document.getElementById('backToIntro');
 
         let width = 800;
         let height = 600;
@@ -110,6 +134,7 @@
         let stage = 1;
         let gameCompleted = false;
         let timerInterval;
+        let rankings = [];
 
         function resizeCanvas() {
             const maxWidth = window.innerWidth * 0.9;
@@ -138,6 +163,7 @@
             nameInput.style.display = 'none';
             submitNameButton.style.display = 'none';
             tryAgainButton.style.display = 'none';
+            showRankingAfterGameButton.style.display = 'none';
 
             clearInterval(timerInterval);
             updateTimer();
@@ -149,8 +175,8 @@
         function setStage() {
             characters = [];
             currentTarget = 0;
-            const rows = 10;
-            const cols = 10;
+            const rows = 8;
+            const cols = 8;
             const cellWidth = canvas.width / cols;
             const cellHeight = canvas.height / rows;
 
@@ -185,7 +211,7 @@
 
         function draw() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-            ctx.font = `${canvas.width / 40}px Arial`;
+            ctx.font = `${canvas.width / 16}px Arial`;
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
 
@@ -214,8 +240,8 @@
             const y = (event.clientY - rect.top) * (canvas.height / rect.height);
 
             for (let char of characters) {
-                const cellWidth = canvas.width / 10;
-                const cellHeight = canvas.height / 10;
+                const cellWidth = canvas.width / 8;
+                const cellHeight = canvas.height / 8;
                 if (Math.abs(char.x - x) < cellWidth / 2 && Math.abs(char.y - y) < cellHeight / 2) {
                     if (char.char === targetChars[stage - 1][currentTarget]) {
                         char.selected = true;
@@ -249,20 +275,30 @@
                 playerNameElement.textContent = `Player: ${name}`;
                 nameInput.style.display = 'none';
                 submitNameButton.style.display = 'none';
-                tryAgainButton.style.display = 'block';
+                tryAgainButton.style.display = 'inline-block';
+                showRankingAfterGameButton.style.display = 'inline-block';
+                rankings.push({ name: name, time: elapsedTime });
+                rankings.sort((a, b) => a.time - b.time);
+                if (rankings.length > 10) {
+                    rankings.pop();
+                }
+                localStorage.setItem('babaGameRankings', JSON.stringify(rankings));
             }
         });
 
-        tryAgainButton.addEventListener('click', function() {
+        function resetGame() {
             introScreen.style.display = 'block';
             canvas.style.display = 'none';
             timerElement.style.display = 'none';
             stageElement.style.display = 'none';
             targetInfoElement.style.display = 'none';
             tryAgainButton.style.display = 'none';
-            winMessageElement.style.display = 'none'; // この行を追加
+            showRankingAfterGameButton.style.display = 'none';
+            winMessageElement.style.display = 'none';
             playerNameElement.textContent = '';
-        });
+        }
+
+        tryAgainButton.addEventListener('click', resetGame);
 
         startGameButton.addEventListener('click', function() {
             introScreen.style.display = 'none';
@@ -273,7 +309,32 @@
             initializeGame();
         });
 
+        function showRanking() {
+            rankingList.innerHTML = '';
+            rankings.forEach((rank, index) => {
+                const li = document.createElement('li');
+                li.textContent = `${index + 1}. ${rank.name}: ${rank.time.toFixed(1)}秒`;
+                rankingList.appendChild(li);
+            });
+            introScreen.style.display = 'none';
+            rankingScreen.style.display = 'block';
+        }
+
+        showRankingButton.addEventListener('click', showRanking);
+        showRankingAfterGameButton.addEventListener('click', showRanking);
+
+        backToIntroButton.addEventListener('click', function() {
+            rankingScreen.style.display = 'none';
+            introScreen.style.display = 'block';
+        });
+
         window.addEventListener('resize', resizeCanvas);
+
+        // ランキングデータの読み込み
+        const savedRankings = localStorage.getItem('babaGameRankings');
+        if (savedRankings) {
+            rankings = JSON.parse(savedRankings);
+        }
     </script>
 </body>
 </html>
