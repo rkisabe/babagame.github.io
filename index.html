@@ -38,7 +38,7 @@
             color: #4CAF50;
             margin: 10px 0;
         }
-        #playerName {
+        #playerName, #finalTime {
             font-size: 24px;
             font-weight: bold;
             color: blue;
@@ -55,6 +55,11 @@
         #introScreen p {
             font-size: 14px;
             line-height: 1.6;
+        }
+        #screenshotMessage {
+            font-size: 18px;
+            color: #333;
+            margin: 10px 0;
         }
     </style>
 </head>
@@ -73,7 +78,9 @@
     <div id="stage"></div>
     <div id="timer"></div>
     <div id="winMessage" style="display: none;">WIN-WIN</div>
+    <div id="finalTime"></div>
     <div id="playerName"></div>
+    <div id="screenshotMessage" style="display: none;">良かったら記録をスクリーンショットしてください</div>
     <canvas id="gameCanvas"></canvas>
     <input type="text" id="nameInput" placeholder="名前を入力" style="display: none;">
     <button id="submitName" style="display: none;">名前を送信</button>
@@ -94,6 +101,8 @@
         const tryAgainButton = document.getElementById('tryAgain');
         const startGameButton = document.getElementById('startGame');
         const introScreen = document.getElementById('introScreen');
+        const finalTimeElement = document.getElementById('finalTime');
+        const screenshotMessageElement = document.getElementById('screenshotMessage');
 
         let width = 800;
         let height = 600;
@@ -136,6 +145,8 @@
             elapsedTime = 0;
             winMessageElement.style.display = 'none';
             playerNameElement.textContent = '';
+            finalTimeElement.textContent = '';
+            screenshotMessageElement.style.display = 'none';
             nameInput.style.display = 'none';
             submitNameButton.style.display = 'none';
             tryAgainButton.style.display = 'none';
@@ -240,6 +251,7 @@
 
         function showWinMessage() {
             winMessageElement.style.display = 'block';
+            finalTimeElement.textContent = `時間: ${elapsedTime.toFixed(1)}秒`;
             nameInput.style.display = 'block';
             submitNameButton.style.display = 'block';
         }
@@ -250,6 +262,7 @@
                 playerNameElement.textContent = `Player: ${name}`;
                 nameInput.style.display = 'none';
                 submitNameButton.style.display = 'none';
+                screenshotMessageElement.style.display = 'block';
                 tryAgainButton.style.display = 'inline-block';
             }
         });
@@ -263,6 +276,8 @@
             tryAgainButton.style.display = 'none';
             winMessageElement.style.display = 'none';
             playerNameElement.textContent = '';
+            finalTimeElement.textContent = '';
+            screenshotMessageElement.style.display = 'none';
         }
 
         tryAgainButton.addEventListener('click', resetGame);
