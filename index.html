@@ -19,14 +19,12 @@
             border: 1px solid black;
             max-width: 100%;
             max-height: 70vh;
-            display: none;
         }
         #timer, #stage, #targetInfo {
             font-size: 24px;
             margin: 10px 0;
-            display: none;
         }
-        #nameInput, #submitName, #tryAgain, #startGame {
+        #nameInput, #submitName, #tryAgain, #startGame, #showRanking {
             margin: 10px 5px;
             font-size: 18px;
             padding: 10px 20px;
@@ -35,7 +33,7 @@
         #winMessage {
             font-size: 36px;
             font-weight: bold;
-            color: #4CAF50;
+            color: red;
             margin: 10px 0;
         }
         #playerName {
@@ -44,17 +42,32 @@
             color: blue;
             margin: 10px 0;
         }
-        #introScreen {
+        #finalTime {
+            font-size: 24px;
+            font-weight: bold;
+            color: black;
+            margin: 10px 0;
+        }
+        #introScreen, #gameScreen, #finishScreen, #rankingScreen {
             text-align: center;
             max-width: 600px;
         }
-        #introScreen h1 {
+        #introScreen h1, #finishScreen h1 {
             font-size: 48px;
             color: #4CAF50;
         }
         #introScreen p {
             font-size: 14px;
             line-height: 1.6;
+        }
+        #screenshotMessage {
+            font-size: 18px;
+            color: #333;
+            margin: 10px 0;
+        }
+        #rankingList {
+            text-align: left;
+            margin-top: 20px;
         }
     </style>
 </head>
@@ -67,18 +80,32 @@
             下のボタンをクリックしてゲームを開始してください。
         </p>
         <button id="startGame">ゲームを開始</button>
+        <button id="showRankingIntro">ランキング</button>
     </div>
 
-    <div id="targetInfo"></div>
-    <div id="stage"></div>
-    <div id="timer"></div>
-    <div id="winMessage" style="display: none;">WIN-WIN</div>
-    <div id="playerName"></div>
-    <canvas id="gameCanvas"></canvas>
-    <input type="text" id="nameInput" placeholder="名前を入力" style="display: none;">
-    <button id="submitName" style="display: none;">名前を送信</button>
-    <div>
+    <div id="gameScreen" style="display: none;">
+        <div id="targetInfo"></div>
+        <div id="stage"></div>
+        <div id="timer"></div>
+        <canvas id="gameCanvas"></canvas>
+    </div>
+
+    <div id="finishScreen" style="display: none;">
+        <h1>BABA GAME</h1>
+        <div id="winMessage">WIN-WIN</div>
+        <div id="finalTime"></div>
+        <div id="playerName"></div>
+        <input type="text" id="nameInput" placeholder="名前を入力">
+        <button id="submitName">名前を送信</button>
+        <div id="screenshotMessage" style="display: none;"></div>
         <button id="tryAgain" style="display: none;">Try Again</button>
+        <button id="showRanking" style="display: none;">Ranking</button>
+    </div>
+
+    <div id="rankingScreen" style="display: none;">
+        <h2>ランキング TOP10</h2>
+        <div id="rankingList"></div>
+        <button id="closeRanking">閉じる</button>
     </div>
 
     <script>
@@ -94,6 +121,15 @@
         const tryAgainButton = document.getElementById('tryAgain');
         const startGameButton = document.getElementById('startGame');
         const introScreen = document.getElementById('introScreen');
+        const gameScreen = document.getElementById('gameScreen');
+        const finishScreen = document.getElementById('finishScreen');
+        const finalTimeElement = document.getElementById('finalTime');
+        const screenshotMessageElement = document.getElementById('screenshotMessage');
+        const showRankingButton = document.getElementById('showRanking');
+        const showRankingIntroButton = document.getElementById('showRankingIntro');
+        const rankingScreen = document.getElementById('rankingScreen');
+        const rankingList = document.getElementById('rankingList');
+        const closeRankingButton = document.getElementById('closeRanking');
 
         let width = 800;
         let height = 600;
@@ -134,11 +170,6 @@
             stage = 1;
             startTime = new Date().getTime();
             elapsedTime = 0;
-            winMessageElement.style.display = 'none';
-            playerNameElement.textContent = '';
-            nameInput.style.display = 'none';
-            submitNameButton.style.display = 'none';
-            tryAgainButton.style.display = 'none';
 
             clearInterval(timerInterval);
             updateTimer();
@@ -229,7 +260,7 @@
                             } else {
                                 gameCompleted = true;
                                 clearInterval(timerInterval);
-                                showWinMessage();
+                                showFinishScreen();
                             }
                         }
                     }
@@ -238,10 +269,29 @@
             }
         });
 
-        function showWinMessage() {
-            winMessageElement.style.display = 'block';
-            nameInput.style.display = 'block';
-            submitNameButton.style.display = 'block';
+        function showFinishScreen() {
+            gameScreen.style.display = 'none';
+            finishScreen.style.display = 'block';
+            finalTimeElement.textContent = `時間: ${elapsedTime.toFixed(1)}秒`;
+            updateScreenshotMessage(elapsedTime);
+        }
+
+        function updateScreenshotMessage(time) {
+            let rank;
+            if (time <= 5) {
+                rank = "一撃";
+            } else if (time <= 8) {
+                rank = "エース";
+            } else if (time <= 11) {
+                rank = "ゲーマー";
+            } else if (time <= 15) {
+                rank = "たむけん";
+            } else if (time <= 20) {
+                rank = "独り言";
+            } else {
+                rank = "あかーん";
+            }
+            screenshotMessageElement.textContent = `${rank}級`;
         }
 
         submitNameButton.addEventListener('click', function() {
@@ -250,31 +300,70 @@
                 playerNameElement.textContent = `Player: ${name}`;
                 nameInput.style.display = 'none';
                 submitNameButton.style.display = 'none';
+                screenshotMessageElement.style.display = 'block';
                 tryAgainButton.style.display = 'inline-block';
+                showRankingButton.style.display = 'inline-block';
+                updateRanking(name, elapsedTime);
             }
         });
 
         function resetGame() {
             introScreen.style.display = 'block';
-            canvas.style.display = 'none';
-            timerElement.style.display = 'none';
-            stageElement.style.display = 'none';
-            targetInfoElement.style.display = 'none';
-            tryAgainButton.style.display = 'none';
-            winMessageElement.style.display = 'none';
+            gameScreen.style.display = 'none';
+            finishScreen.style.display = 'none';
+            rankingScreen.style.display = 'none';
             playerNameElement.textContent = '';
+            nameInput.value = '';
+            nameInput.style.display = 'inline-block';
+            submitNameButton.style.display = 'inline-block';
+            screenshotMessageElement.style.display = 'none';
+            tryAgainButton.style.display = 'none';
+            showRankingButton.style.display = 'none';
         }
 
         tryAgainButton.addEventListener('click', resetGame);
 
         startGameButton.addEventListener('click', function() {
             introScreen.style.display = 'none';
-            canvas.style.display = 'block';
-            timerElement.style.display = 'block';
-            stageElement.style.display = 'block';
-            targetInfoElement.style.display = 'block';
+            gameScreen.style.display = 'block';
             initializeGame();
         });
+
+        showRankingButton.addEventListener('click', showRanking);
+        showRankingIntroButton.addEventListener('click', showRanking);
+        closeRankingButton.addEventListener('click', hideRanking);
+
+        function showRanking() {
+            introScreen.style.display = 'none';
+            finishScreen.style.display = 'none';
+            rankingScreen.style.display = 'block';
+            displayRanking();
+        }
+
+        function hideRanking() {
+            rankingScreen.style.display = 'none';
+            if (gameCompleted) {
+                finishScreen.style.display = 'block';
+            } else {
+                introScreen.style.display = 'block';
+            }
+        }
+
+        function updateRanking(name, time) {
+            let ranking = JSON.parse(localStorage.getItem('babaGameRanking')) || [];
+            ranking.push({name: name, time: time, date: new Date().toLocaleString()});
+            ranking.sort((a, b) => a.time - b.time);
+            ranking = ranking.slice(0, 10);
+            localStorage.setItem('babaGameRanking', JSON.stringify(ranking));
+        }
+
+        function displayRanking() {
+            let ranking = JSON.parse(localStorage.getItem('babaGameRanking')) || [];
+            rankingList.innerHTML = '';
+            ranking.forEach((entry, index) => {
+                rankingList.innerHTML += `<p>${index + 1}. ${entry.name}: ${entry.time.toFixed(1)}秒 (${entry.date})</p>`;
+            });
+        }
 
         window.addEventListener('resize', resizeCanvas);
     </script>
