@@ -1,4 +1,3 @@
-# .github/workflows/update-ranking.yml
 name: Update Ranking
 
 on:
@@ -11,6 +10,8 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Update ranking
+        env:
+          GITHUB_TOKEN: ${{ secrets.BABA_GITHUB_TOKEN }}
         run: |
           # Parse issue title for name and score
           ISSUE_TITLE="${{ github.event.issue.title }}"
